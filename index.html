@@ -396,41 +396,37 @@ function renderPersons() {
     : '<tr><td colspan="4" class="empty">Brak zdefiniowanych osób</td></tr>';
 }
 
+function anonymizeLocally(text) {
+  if (!text || S.persons.length === 0) return text;
+  let result = text;
+  const sorted = [...S.persons].sort((a,b) => b.name.length - a.name.length);
+  for (const p of sorted) {
+    if (!p.name || p.name.trim().length < 2) continue;
+    const escaped = p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    result = result.replace(new RegExp(escaped, 'gi'), p.code);
+    const parts = p.name.trim().split(/\s+/);
+    if (parts.length > 1) {
+      const initials = parts.map(w=>w[0].toUpperCase()).join('.')+'.';
+      const esc2 = initials.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      result = result.replace(new RegExp(esc2, 'g'), p.code);
+    }
+  }
+  return result;
+}
+
 function buildPrompt() {
-  const txtBlocks = S.entries.map((e,i) => `\n--- [${e.src} / wpis ${i+1}] ---\n${e.text}`).join('\n');
+  const txtBlocks = S.entries.map((e,i) => {
+    return `\n--- [${anonymizeLocally(e.src)} / wpis ${i+1}] ---\n${anonymizeLocally(e.text)}`;
+  }).join('\n');
   const imgList = S.files.filter(f=>f.type.startsWith('image/')).map(f=>`  • Screenshot: "${f.name}"`).join('\n');
-  const txtFiles = S.files.filter(f=>!f.type.startsWith('image/')).map(f=>
-    `\n--- [Plik: ${f.name}] ---\n${typeof f.data==='string'&&!f.data.startsWith('data:')?f.data:'(binarny)'}`).join('\n');
-  const persons = S.persons.map(p=>`  ${p.code} = ${p.name} (${p.role})`).join('\n');
-  return `Jesteś wybitnym ekspertem w dziedzinie psycholingwistyki z 15-letnim doświadczeniem klinicznym i prawnym. Znasz polskie prawo karne (art. 190a KK stalking, art. 190 KK groźby, art. 207 KK znęcanie). Jesteś obiektywny i krytyczny — weryfikujesz tezy z obu stron.
-
-DANE FORMALNE:
-Sygnatura: ${document.getElementById('caseNum').value||'(brak)'}
-Okres: ${document.getElementById('casePer').value||'(nieokreślony)'}
-Platforma: ${document.getElementById('platform').value}
-Typ analizy: ${document.getElementById('atype').value}
-Słownik osób:\n${persons||'  (nie zdefiniowano)'}
-
-KONTEKST: ${document.getElementById('caseBg').value||'(brak)'}
-PYTANIA: ${document.getElementById('resQ').value||'Ogólna ocena zagrożeń i presji.'}
-
-MATERIAŁY DOWODOWE:
-${txtBlocks||'(brak wpisów tekstowych)'}
-${imgList?'\nSCREENSHOTY:\n'+imgList:''}
-${txtFiles||''}
-
-Wykonaj analizę w strukturze:
-1. OCENA WSTĘPNA MATERIAŁÓW (co zawierają, kompletność, ograniczenia)
-2. ANALIZA LINGWISTYCZNA (styl, słownictwo, wzorce, eskalacja, groźby)
-3. ANALIZA PSYCHOLOGICZNA (gaslighting/DARVO/love-bombing, presja, kontrola)
-4. WSKAŹNIKI KOGNITYWNE (agresja słowna, stres, próby kontroli rzeczywistości)
-5. OCENY LICZBOWE — podaj DOKŁADNIE w osobnej linii:
-PRESJA:X AGRESJA:X NEKANIE:X WIARYGODNOSC:X
-(skala 0-10)
-6. WSKAŹNIKI PRAWNE (art. 190a/190/207 KK — co spełnia znamiona, co nie, czego brakuje)
-7. WNIOSKI I REKOMENDACJE
-
-Używaj wyłącznie kodów osób. Bądź krytyczny. Odpowiedź po polsku.`;
+  const txtFiles = S.files.filter(f=>!f.type.startsWith('image/')).map(f=>{
+    const raw = typeof f.data==='string'&&!f.data.startsWith('data:') ? f.data : '(binarny)';
+    return `\n--- [Plik: ${f.name}] ---\n${anonymizeLocally(raw)}`;
+  }).join('\n');
+  const ctx = anonymizeLocally(document.getElementById('caseBg').value||'(brak)');
+  const quest = anonymizeLocally(document.getElementById('resQ').value||'Ogólna ocena zagrożeń i presji.');
+  const persons = S.persons.map(p=>`  ${p.code} = (${p.role})`).join('\n');
+  return `Jesteś wybitnym ekspertem w dziedzinie psycholingwistyki z 15-letnim doświadczeniem klinicznym i prawnym. Znasz polskie prawo karne (art. 190a KK stalking, art. 190 KK groźby, art. 207 KK znęcanie). Jesteś obiektywny i krytyczny.\n\nDANE FORMALNE:\nSygnatura: ${document.getElementById('caseNum').value||'(brak)'}\nOkres: ${document.getElementById('casePer').value||'(nieokreślony)'}\nPlatforma: ${document.getElementById('platform').value}\nTyp analizy: ${document.getElementById('atype').value}\nSłownik osób:\n${persons||'  (nie zdefiniowano)'}\n\nKONTEKST: ${ctx}\nPYTANIA: ${quest}\n\nMATERIAŁY (zanonimizowane lokalnie — prawdziwe dane nie opuściły przeglądarki):\n${txtBlocks||'(brak)'}\n${imgList?'\nSCREENSHOTY:\n'+imgList:''}\n${txtFiles||''}\n\nWykonaj analizę:\n1. OCENA WSTĘPNA MATERIAŁÓW\n2. ANALIZA LINGWISTYCZNA\n3. ANALIZA PSYCHOLOGICZNA (gaslighting/DARVO/love-bombing/presja)\n4. WSKAŹNIKI KOGNITYWNE\n5. OCENY — w osobnej linii:\nPRESJA:X AGRESJA:X NEKANIE:X WIARYGODNOSC:X\n6. WSKAŹNIKI PRAWNE (art. 190a/190/207 KK)\n7. WNIOSKI I REKOMENDACJE\n\nUżywaj kodów osób. Bądź krytyczny. Po polsku.`;
 }
 
 async function compressImage(dataUrl) {
