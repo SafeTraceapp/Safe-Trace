@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PsychoLex Analyzer — Analiza Psycholingwistyczna</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f6f5f2;--bg3:#edecea;
+  --bgi:#e8f2fc;--bgd:#fceaea;--bgs:#eaf4de;--bgw:#fef8e8;
+  --txt:#181816;--txt2:#5a5956;--txt3:#929088;
+  --txti:#1660a8;--txtd:#9c2b2b;--txts:#3a6b10;--txtw:#7d4b08;
+  --brd:rgba(0,0,0,0.11);--brd2:rgba(0,0,0,0.20);
+  --brdi:#a8cfef;--brdd:#f0b8b8;--brds:#b8d990;--brdw:#f0c060;
+  --r:8px;--rl:12px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1a;--bg2:#262624;--bg3:#302f2c;
+  --bgi:#0a2a45;--bgd:#3a1010;--bgs:#142505;--bgw:#2a1a02;
+  --txt:#eeebe4;--txt2:#aeaba2;--txt3:#807d74;
+  --txti:#7ab2e8;--txtd:#e88888;--txts:#8ec050;--txtw:#e09020;
+  --brd:rgba(255,255,255,0.11);--brd2:rgba(255,255,255,0.20);
+  --brdi:#1a5890;--brdd:#702020;--brds:#386410;--brdw:#604008;
+}}
+html,body{height:100%;font-family:var(--font);color:var(--txt);background:var(--bg3);font-size:14px;line-height:1.6}
+.wrap{display:flex;flex-direction:column;height:100%;max-width:1080px;margin:0 auto;background:var(--bg);box-shadow:0 0 0 1px var(--brd)}
+.hdr{display:flex;align-items:center;gap:11px;padding:12px 18px;background:var(--bg2);border-bottom:1px solid var(--brd);flex-shrink:0}
+.hlogo{width:32px;height:32px;background:#162e4a;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.htitle{font-size:14px;font-weight:600;letter-spacing:-0.01em}
+.hsub{font-size:11px;color:var(--txt3)}
+.hbadge{font-size:9px;padding:1px 6px;background:var(--bgi);color:var(--txti);border:1px solid var(--brdi);border-radius:99px;font-weight:700;letter-spacing:0.05em;margin-left:6px}
+.apibar{display:none}
+.body{display:flex;flex:1;min-height:0}
+.side{width:200px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--brd);padding:10px 8px;display:flex;flex-direction:column;gap:3px}
+.slbl{font-size:9px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--txt3);padding:8px 6px 3px}
+.nb{display:flex;align-items:center;gap:7px;width:100%;border:none;background:transparent;padding:7px 8px;border-radius:var(--r);cursor:pointer;font-size:12px;font-family:var(--font);color:var(--txt2);text-align:left;transition:background .12s}
+.nb:hover{background:var(--bg3)}
+.nb.on{background:var(--bgi);color:var(--txti);font-weight:600}
+.nicon{font-size:14px;width:18px;text-align:center}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.tab{display:none;flex-direction:column;gap:12px;padding:16px 18px;overflow-y:auto;flex:1}
+.tab.on{display:flex}
+.sec{font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--txt3)}
+.drop{border:1.5px dashed var(--brd2);border-radius:var(--rl);padding:28px 20px;text-align:center;cursor:pointer;transition:all .18s;user-select:none}
+.drop:hover,.drop.over{border-color:var(--brdi);background:var(--bgi)}
+.drop .ico{font-size:24px;margin-bottom:6px}
+.drop p{font-size:13px;color:var(--txt2)}
+.drop small{font-size:11px;color:var(--txt3)}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:7px}
+.fcard{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r);padding:8px;display:flex;align-items:center;gap:8px}
+.fthumb{width:28px;height:28px;border-radius:4px;object-fit:cover;flex-shrink:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:14px}
+.fname{font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.fmeta{font-size:10px;color:var(--txt3)}
+.fdel{margin-left:auto;border:none;background:transparent;cursor:pointer;color:var(--txt3);font-size:12px;padding:2px 4px;flex-shrink:0}
+.fdel:hover{color:var(--txtd)}
+textarea{width:100%;border:1px solid var(--brd);border-radius:var(--r);padding:9px 11px;font:13px/1.55 var(--font);color:var(--txt);background:var(--bg);resize:vertical}
+textarea:focus{outline:none;border-color:var(--brdi)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fl{font-size:11px;font-weight:600;color:var(--txt2)}
+input[type=text],input[type=password],select{width:100%;border:1px solid var(--brd);border-radius:var(--r);padding:7px 10px;font:13px var(--font);color:var(--txt);background:var(--bg)}
+input:focus,select:focus{outline:none;border-color:var(--brdi)}
+.ecard{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r);padding:9px 11px;display:flex;gap:9px;align-items:flex-start}
+.enum{min-width:20px;height:20px;border-radius:50%;background:var(--bg);border:1px solid var(--brd);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--txt3);flex-shrink:0}
+.ebdy{flex:1;min-width:0}
+.etitle{font-size:12px;font-weight:600}
+.etext{font-size:11px;color:var(--txt2);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4}
+.edel{border:none;background:transparent;cursor:pointer;color:var(--txt3);font-size:11px;padding:2px 4px;margin-left:auto;flex-shrink:0}
+.edel:hover{color:var(--txtd)}
+.btn{background:#162e4a;color:#fff;border:none;border-radius:var(--r);padding:8px 15px;font:600 13px var(--font);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:opacity .15s;white-space:nowrap}
+.btn:hover{opacity:.85}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn2{background:transparent;color:var(--txt);border:1px solid var(--brd2);border-radius:var(--r);padding:7px 13px;font:13px var(--font);cursor:pointer;transition:background .12s;white-space:nowrap}
+.btn2:hover{background:var(--bg2)}
+.brow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pbox{background:var(--bg2);border-radius:var(--rl);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.ptitle{font-size:13px;font-weight:600}
+.prow{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--txt2)}
+.dot{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;transition:all .3s}
+.dw{background:var(--bg3);color:var(--txt3);border:1px solid var(--brd)}
+.da{background:var(--bgi);color:var(--txti);border:1px solid var(--brdi)}
+.dd{background:var(--bgs);color:var(--txts);border:1px solid var(--brds)}
+.rout{background:var(--bg);border:1px solid var(--brd);border-radius:var(--rl);padding:14px 16px;font-size:12px;line-height:1.8;white-space:pre-wrap;max-height:500px;overflow-y:auto}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px}
+.chd{background:var(--bgd);color:var(--txtd);border:1px solid var(--brdd)}
+.chw{background:var(--bgw);color:var(--txtw);border:1px solid var(--brdw)}
+.chs{background:var(--bgs);color:var(--txts);border:1px solid var(--brds)}
+.chi{background:var(--bgi);color:var(--txti);border:1px solid var(--brdi)}
+.bars{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.bcard{background:var(--bg2);border-radius:var(--r);padding:9px 11px}
+.blbl{font-size:10px;font-weight:600;color:var(--txt3);margin-bottom:4px}
+.btrack{height:5px;background:var(--brd);border-radius:99px;overflow:hidden}
+.bfill{height:100%;border-radius:99px;transition:width 1.2s ease}
+.bval{font-size:11px;font-weight:700;margin-top:3px}
+.r-{background:#dc3030}.a-{background:#e89020}.g-{background:#5a9e18}.b-{background:#2e7ad0}
+.ibox{background:var(--bgi);border:1px solid var(--brdi);border-radius:var(--r);padding:9px 11px;font-size:11px;color:var(--txti)}
+.wbox{background:var(--bgw);border:1px solid var(--brdw);border-radius:var(--r);padding:9px 11px;font-size:11px;color:var(--txtw);line-height:1.5}
+.ropts{display:flex;flex-direction:column;gap:7px}
+.ropt{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg2);border-radius:var(--r);cursor:pointer;border:1px solid transparent;transition:border-color .15s}
+.ropt:has(input:checked){border-color:var(--brdi);background:var(--bgi)}
+.rlbl{font-size:12px;font-weight:600}
+.rdsc{font-size:10px;color:var(--txt3);margin-top:1px}
+.tag{font-size:10px;padding:1px 6px;border-radius:4px;background:var(--bg3);color:var(--txt3);border:1px solid var(--brd)}
+.tbl{width:100%;border-collapse:collapse;font-size:11px}
+.tbl th{text-align:left;padding:5px 9px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--txt3);border-bottom:1px solid var(--brd)}
+.tbl td{padding:5px 9px;border-bottom:1px solid var(--brd)}
+.tbl tr:last-child td{border-bottom:none}
+.spin{width:15px;height:15px;border:2px solid var(--brd);border-top-color:#162e4a;border-radius:50%;animation:sp .7s linear infinite;flex-shrink:0}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hidden{display:none!important}
+.empty{font-size:11px;color:var(--txt3);font-style:italic;padding:4px 2px}
+@media(max-width:600px){
+  .side{display:none}
+  .tab{padding:12px}
+  .row2{grid-template-columns:1fr}
+  .bars{grid-template-columns:1fr}
+  .mobile-nav{display:flex!important}
+}
+.mobile-nav{display:none;overflow-x:auto;background:var(--bg2);border-bottom:1px solid var(--brd);padding:6px 10px;gap:6px;flex-shrink:0}
+.mnb{border:none;background:var(--bg3);padding:6px 10px;border-radius:var(--r);font:12px var(--font);color:var(--txt2);cursor:pointer;white-space:nowrap}
+.mnb.on{background:var(--bgi);color:var(--txti);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <div class="hlogo">
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+      <path d="M10 2L3 6v8l7 4 7-4V6L10 2z" stroke="#6ab0f5" stroke-width="1.4"/>
+      <path d="M10 2v12M3 6l7 4 7-4" stroke="#6ab0f5" stroke-width="1.4"/>
+    </svg>
+  </div>
+  <div style="flex:1">
+    <div class="htitle">PsychoLex Analyzer<span class="hbadge">EKSPERT</span></div>
+    <div class="hsub">Psycholingwistyczna analiza zagrożeń · Raport sądowy</div>
+  </div>
+</div>
+
+<div class="apibar">
+  <label>🔑 Klucz API:</label>
+  <input type="password" id="apiKey" placeholder="sk-ant-api03-..." oninput="saveKey(this.value)">
+  <span class="apinote">Klucz zapisywany tylko w Twojej przeglądarce · Wysyłany wyłącznie do api.anthropic.com</span>
+</div>
+
+<!-- Mobile nav -->
+<div class="mobile-nav" id="mnav">
+  <button class="mnb on" onclick="goTab('upload')">📎 Materiały</button>
+  <button class="mnb" onclick="goTab('ctx')">📋 Kontekst</button>
+  <button class="mnb" onclick="goTab('persons')">👤 Osoby</button>
+  <button class="mnb" onclick="goTab('analyze')">🔍 Analiza</button>
+  <button class="mnb" onclick="goTab('report')">📄 Raport</button>
+</div>
+
+<div class="body">
+  <nav class="side">
+    <div class="slbl">Moduły</div>
+    <button class="nb on" onclick="goTab('upload')" id="nb-upload"><span class="nicon">📎</span>Dodaj materiały</button>
+    <button class="nb" onclick="goTab('ctx')" id="nb-ctx"><span class="nicon">📋</span>Kontekst sprawy</button>
+    <button class="nb" onclick="goTab('persons')" id="nb-persons"><span class="nicon">👤</span>Anonimizacja</button>
+    <button class="nb" onclick="goTab('analyze')" id="nb-analyze"><span class="nicon">🔍</span>Analiza</button>
+    <button class="nb" onclick="goTab('report')" id="nb-report"><span class="nicon">📄</span>Raport</button>
+    <div style="margin-top:auto;padding-top:10px;border-top:1px solid var(--brd)">
+      <div class="wbox">Narzędzie pomocnicze. Nie zastępuje opinii biegłego sądowego.</div>
+    </div>
+  </nav>
+
+  <div class="main">
+
+    <!-- UPLOAD -->
+    <div class="tab on" id="tab-upload">
+      <div class="sec">Pliki i screenshoty</div>
+      <div class="drop" id="dz" onclick="document.getElementById('fi').click()"
+        ondragover="event.preventDefault();this.classList.add('over')"
+        ondragleave="this.classList.remove('over')" ondrop="onDrop(event)">
+        <div class="ico">📎</div>
+        <p>Przeciągnij screenshoty lub kliknij, aby wybrać</p>
+        <small>JPG, PNG, GIF, WEBP · TXT — screenshoty wiadomości, dokumenty</small>
+      </div>
+      <input type="file" id="fi" class="hidden" multiple accept="image/*,.txt" onchange="onFiles(event)">
+      <div id="fgrid" class="fgrid"></div>
+      <div class="sec">Wklej tekst bezpośrednio</div>
+      <textarea id="txtInput" rows="4" placeholder="Wklej treść wiadomości, SMS-ów, e-maili, komentarzy..."></textarea>
+      <div class="fg">
+        <div class="fl">Źródło / opis (opcjonalnie)</div>
+        <input type="text" id="txtSrc" placeholder="np. SMS z 10.03.2024, e-mail od O-01, post na FB">
+      </div>
+      <div class="brow">
+        <button class="btn" onclick="addEntry()">+ Dodaj wpis</button>
+        <span id="cnt" style="font-size:11px;color:var(--txt3)">0 pozycji</span>
+      </div>
+      <div id="elist" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+
+    <!-- CONTEXT -->
+    <div class="tab" id="tab-ctx">
+      <div class="sec">Dane formalne</div>
+      <div class="row2">
+        <div class="fg"><div class="fl">Sygnatura sprawy</div><input type="text" id="caseNum" placeholder="DS.123/2024 (opcjonalnie)"></div>
+        <div class="fg"><div class="fl">Okres materiałów</div><input type="text" id="casePer" placeholder="np. styczeń–marzec 2024"></div>
+      </div>
+      <div class="fg"><div class="fl">Opis sytuacji i tło zdarzenia</div>
+        <textarea id="caseBg" rows="4" placeholder="Opisz kontekst: charakter relacji, historia, okoliczności..."></textarea>
+      </div>
+      <div class="row2">
+        <div class="fg"><div class="fl">Platforma / kanał</div>
+          <select id="platform">
+            <option>SMS / wiadomości tekstowe</option><option>E-mail</option>
+            <option>Media społecznościowe (FB, IG, X)</option>
+            <option>Komunikatory (WhatsApp, Messenger, Telegram)</option>
+            <option>Rozmowy (transkrypcja)</option><option>Inne / mieszane</option>
+          </select>
+        </div>
+        <div class="fg"><div class="fl">Typ analizy</div>
+          <select id="atype">
+            <option>Nękanie / stalking (art. 190a KK)</option>
+            <option>Groźby i presja psychiczna (art. 190 KK)</option>
+            <option>Manipulacja i gaslighting</option>
+            <option>Mowa nienawiści</option>
+            <option>Szantaż emocjonalny</option>
+            <option>Kompleksowa analiza zagrożeń</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><div class="fl">Pytania badawcze</div>
+        <textarea id="resQ" rows="3" placeholder="np. Czy wzorzec komunikacji wykazuje cechy nękania? Czy treści zawierają groźby?"></textarea>
+      </div>
+      <div class="ibox">Im więcej kontekstu podasz, tym dokładniejsza będzie analiza.</div>
+    </div>
+
+    <!-- PERSONS -->
+    <div class="tab" id="tab-persons">
+      <div class="sec">Anonimizacja osób</div>
+      <div class="ibox">Każda osoba otrzymuje kod (O-01, O-02...). W raporcie nie pojawią się prawdziwe dane.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+        <div class="fg" style="flex:1;min-width:140px"><div class="fl">Opis osoby</div>
+          <input type="text" id="pname" placeholder="np. J.K., były partner, współpracownik"></div>
+        <div class="fg" style="width:160px"><div class="fl">Rola</div>
+          <select id="prole"><option>Sprawca / nadawca</option><option>Pokrzywdzony/a</option>
+            <option>Świadek</option><option>Osoba trzecia</option></select></div>
+        <button class="btn" onclick="addPerson()" style="padding:7px 12px;font-size:12px">+ Dodaj</button>
+      </div>
+      <table class="tbl" style="margin-top:4px">
+        <thead><tr><th>Kod</th><th>Opis (tylko lokalnie)</th><th>Rola</th><th></th></tr></thead>
+        <tbody id="ptbody"></tbody>
+      </table>
+    </div>
+
+    <!-- ANALYZE -->
+    <div class="tab" id="tab-analyze">
+      <div class="sec">Analiza psycholingwistyczna</div>
+      <div class="pbox">
+        <div class="ptitle" id="ptitle">Gotowy — dodaj materiały i uruchom analizę</div>
+        <div class="prow"><div class="dot dw" id="d1">1</div><span>Weryfikacja i przygotowanie materiałów</span></div>
+        <div class="prow"><div class="dot dw" id="d2">2</div><span>Analiza lingwistyczna i psychologiczna</span></div>
+        <div class="prow"><div class="dot dw" id="d3">3</div><span>Ocena wskaźników prawnych (prawo PL)</span></div>
+        <div class="prow"><div class="dot dw" id="d4">4</div><span>Synteza, wnioski i rekomendacje eksperta</span></div>
+      </div>
+      <div class="brow">
+        <button class="btn" id="abtn" onclick="runAnalysis()">▶ Uruchom analizę eksperta</button>
+        <button class="btn2" onclick="clearResult()">Wyczyść</button>
+        <div class="spin hidden" id="aspin"></div>
+        <span id="astatus" style="font-size:11px;color:var(--txt3)"></span>
+      </div>
+      <div id="rsec" class="hidden" style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div class="sec" style="margin:0">Wyniki analizy</div>
+          <div class="chips" id="chips"></div>
+        </div>
+        <div class="bars" id="bars"></div>
+        <div class="rout" id="rout"></div>
+      </div>
+    </div>
+
+    <!-- REPORT -->
+    <div class="tab" id="tab-report">
+      <div class="sec">Generowanie raportu</div>
+      <div class="ropts">
+        <label class="ropt"><div><div class="rlbl">Pełny raport psycholingwistyczny</div><div class="rdsc">Metryka · metodologia · analiza · wnioski · rekomendacje</div></div><input type="radio" name="rt" value="full" checked></label>
+        <label class="ropt"><div><div class="rlbl">Raport uproszczony dla prawnika</div><div class="rdsc">Kluczowe wskaźniki · synteza · podstawa prawna</div></div><input type="radio" name="rt" value="short"></label>
+        <label class="ropt"><div><div class="rlbl">Opinia sądowa biegłego</div><div class="rdsc">Format sądowy · pełna anonimizacja · wnioski biegłego</div></div><input type="radio" name="rt" value="court"></label>
+      </div>
+      <div class="fg"><div class="fl">Uwagi dodatkowe (opcjonalnie)</div>
+        <textarea id="rnotes" rows="2" placeholder="np. uwzględnij art. 190a KK, wskaż braki dowodowe..."></textarea>
+      </div>
+      <div class="brow">
+        <button class="btn" id="rbtn" onclick="genReport()">📄 Generuj raport</button>
+        <div class="spin hidden" id="rspin"></div>
+        <span id="rstatus" style="font-size:11px;color:var(--txt3)"></span>
+      </div>
+      <div id="rprev" class="hidden" style="display:flex;flex-direction:column;gap:9px">
+        <div class="rout" id="rprevout"></div>
+        <div class="brow">
+          <button class="btn" onclick="dlReport()">⬇ Pobierz .txt</button>
+          <button class="btn2" onclick="copyReport()">Kopiuj do schowka</button>
+        </div>
+        <div class="ibox" style="font-size:10px">Pobierz .txt → wklej do Worda lub Google Docs i zastosuj formatowanie.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+const S = { files:[], entries:[], persons:[], result:null, report:null };
+let PC = 0;
+
+window.addEventListener('load', () => {
+  const k = localStorage.getItem('pl_k');
+  if (k) document.getElementById('apiKey').value = k;
+});
+function saveKey(v) { localStorage.setItem('pl_k', v); }
+function getKey() { return document.getElementById('apiKey').value.trim(); }
+
+function goTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.nb,.mnb').forEach(b => b.classList.remove('on'));
+  document.getElementById('tab-'+id).classList.add('on');
+  document.querySelectorAll('[onclick*="goTab(\''+id+'\')"]').forEach(b => b.classList.add('on'));
+}
+
+async function callAPI(payload) {
+  const resp = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return data;
+}
+
+function onFiles(e) { [...e.target.files].forEach(addFile); }
+function onDrop(e) {
+  e.preventDefault(); document.getElementById('dz').classList.remove('over');
+  [...e.dataTransfer.files].forEach(addFile);
+}
+function addFile(f) {
+  if (f.size > 20*1024*1024) { alert('"'+f.name+'" jest za duży (max 20MB)'); return; }
+  const r = new FileReader();
+  r.onload = ev => {
+    S.files.push({ id: Math.random().toString(36).slice(2), name:f.name, type:f.type, size:f.size, data:ev.target.result });
+    renderFiles();
+  };
+  f.type.startsWith('image/') ? r.readAsDataURL(f) : r.readAsText(f, 'UTF-8');
+}
+function renderFiles() {
+  document.getElementById('fgrid').innerHTML = S.files.map(f => `
+    <div class="fcard">
+      ${f.type.startsWith('image/') ? `<img class="fthumb" src="${f.data}">` : `<div class="fthumb">📝</div>`}
+      <div style="overflow:hidden;flex:1"><div class="fname">${f.name}</div><div class="fmeta">${(f.size/1024).toFixed(0)}KB</div></div>
+      <button class="fdel" onclick="rmFile('${f.id}')">✕</button>
+    </div>`).join('');
+  updateCnt();
+}
+function rmFile(id) { S.files = S.files.filter(f => f.id !== id); renderFiles(); }
+
+function addEntry() {
+  const txt = document.getElementById('txtInput').value.trim();
+  if (!txt) { alert('Wpisz treść materiału.'); return; }
+  S.entries.push({ id: Math.random().toString(36).slice(2), text:txt,
+    src: document.getElementById('txtSrc').value.trim() || 'Wpis tekstowy',
+    date: new Date().toLocaleDateString('pl-PL') });
+  document.getElementById('txtInput').value = '';
+  document.getElementById('txtSrc').value = '';
+  renderEntries();
+}
+function renderEntries() {
+  document.getElementById('elist').innerHTML = S.entries.map((e,i) => `
+    <div class="ecard">
+      <div class="enum">${i+1}</div>
+      <div class="ebdy"><div class="etitle">${e.src} · ${e.date}</div><div class="etext">${e.text}</div></div>
+      <button class="edel" onclick="rmEntry('${e.id}')">✕</button>
+    </div>`).join('') || '<div class="empty">Brak wpisów</div>';
+  updateCnt();
+}
+function rmEntry(id) { S.entries = S.entries.filter(e => e.id !== id); renderEntries(); }
+function updateCnt() { document.getElementById('cnt').textContent = (S.files.length+S.entries.length)+' pozycji'; }
+
+function addPerson() {
+  const n = document.getElementById('pname').value.trim();
+  if (!n) { alert('Podaj opis osoby.'); return; }
+  PC++;
+  S.persons.push({ code:'O-'+String(PC).padStart(2,'0'), name:n, role:document.getElementById('prole').value });
+  document.getElementById('pname').value = '';
+  renderPersons();
+}
+function rmPerson(code) { S.persons = S.persons.filter(p => p.code !== code); renderPersons(); }
+function renderPersons() {
+  document.getElementById('ptbody').innerHTML = S.persons.length
+    ? S.persons.map(p => `<tr><td><strong>${p.code}</strong></td><td>${p.name}</td><td><span class="tag">${p.role}</span></td><td><button class="fdel" onclick="rmPerson('${p.code}')">✕</button></td></tr>`).join('')
+    : '<tr><td colspan="4" class="empty">Brak zdefiniowanych osób</td></tr>';
+}
+
+function buildPrompt() {
+  const txtBlocks = S.entries.map((e,i) => `\n--- [${e.src} / wpis ${i+1}] ---\n${e.text}`).join('\n');
+  const imgList = S.files.filter(f=>f.type.startsWith('image/')).map(f=>`  • Screenshot: "${f.name}"`).join('\n');
+  const txtFiles = S.files.filter(f=>!f.type.startsWith('image/')).map(f=>
+    `\n--- [Plik: ${f.name}] ---\n${typeof f.data==='string'&&!f.data.startsWith('data:')?f.data:'(binarny)'}`).join('\n');
+  const persons = S.persons.map(p=>`  ${p.code} = ${p.name} (${p.role})`).join('\n');
+  return `Jesteś wybitnym ekspertem w dziedzinie psycholingwistyki z 15-letnim doświadczeniem klinicznym i prawnym. Znasz polskie prawo karne (art. 190a KK stalking, art. 190 KK groźby, art. 207 KK znęcanie). Jesteś obiektywny i krytyczny — weryfikujesz tezy z obu stron.
+
+DANE FORMALNE:
+Sygnatura: ${document.getElementById('caseNum').value||'(brak)'}
+Okres: ${document.getElementById('casePer').value||'(nieokreślony)'}
+Platforma: ${document.getElementById('platform').value}
+Typ analizy: ${document.getElementById('atype').value}
+Słownik osób:\n${persons||'  (nie zdefiniowano)'}
+
+KONTEKST: ${document.getElementById('caseBg').value||'(brak)'}
+PYTANIA: ${document.getElementById('resQ').value||'Ogólna ocena zagrożeń i presji.'}
+
+MATERIAŁY DOWODOWE:
+${txtBlocks||'(brak wpisów tekstowych)'}
+${imgList?'\nSCREENSHOTY:\n'+imgList:''}
+${txtFiles||''}
+
+Wykonaj analizę w strukturze:
+1. OCENA WSTĘPNA MATERIAŁÓW (co zawierają, kompletność, ograniczenia)
+2. ANALIZA LINGWISTYCZNA (styl, słownictwo, wzorce, eskalacja, groźby)
+3. ANALIZA PSYCHOLOGICZNA (gaslighting/DARVO/love-bombing, presja, kontrola)
+4. WSKAŹNIKI KOGNITYWNE (agresja słowna, stres, próby kontroli rzeczywistości)
+5. OCENY LICZBOWE — podaj DOKŁADNIE w osobnej linii:
+PRESJA:X AGRESJA:X NEKANIE:X WIARYGODNOSC:X
+(skala 0-10)
+6. WSKAŹNIKI PRAWNE (art. 190a/190/207 KK — co spełnia znamiona, co nie, czego brakuje)
+7. WNIOSKI I REKOMENDACJE
+
+Używaj wyłącznie kodów osób. Bądź krytyczny. Odpowiedź po polsku.`;
+}
+
+function buildImages() {
+  return S.files.filter(f=>f.type.startsWith('image/')&&f.data&&f.data.startsWith('data:'))
+    .map(f=>({type:'image',source:{type:'base64',media_type:f.type,data:f.data.split(',')[1]}}));
+}
+
+function setDot(i,s){
+  const el=document.getElementById('d'+i);
+  el.className='dot '+(s==='d'?'dd':s==='a'?'da':'dw');
+  el.textContent=s==='d'?'✓':s==='a'?'●':i;
+}
+
+async function runAnalysis() {
+  if (S.files.length+S.entries.length===0){alert('Dodaj materiały w zakładce "Dodaj materiały".');return;}
+  const btn=document.getElementById('abtn');
+  btn.disabled=true;
+  document.getElementById('aspin').classList.remove('hidden');
+  document.getElementById('rsec').classList.add('hidden');
+  document.getElementById('astatus').textContent='Łączenie…';
+  document.getElementById('ptitle').textContent='Analiza w toku…';
+  [1,2,3,4].forEach(i=>setDot(i,'w')); setDot(1,'a');
+  const timers=[
+    setTimeout(()=>{setDot(1,'d');setDot(2,'a');},2000),
+    setTimeout(()=>{setDot(2,'d');setDot(3,'a');},6000),
+    setTimeout(()=>{setDot(3,'d');setDot(4,'a');},11000)
+  ];
+  try {
+    const images=buildImages();
+    const data=await callAPI({model:'claude-opus-4-5',max_tokens:4000,
+      messages:[{role:'user',content:[...images,{type:'text',text:buildPrompt()}]}]});
+    timers.forEach(clearTimeout);
+    [1,2,3,4].forEach(i=>setDot(i,'d'));
+    const text=data.content?.map(c=>c.text||'').join('')||'Brak odpowiedzi.';
+    S.result=text;
+    document.getElementById('ptitle').textContent='✓ Analiza zakończona';
+    document.getElementById('astatus').textContent='';
+    renderResult(text);
+  } catch(err) {
+    timers.forEach(clearTimeout);
+    [1,2,3,4].forEach(i=>setDot(i,'w'));
+    document.getElementById('ptitle').textContent='✗ Błąd';
+    document.getElementById('astatus').textContent='';
+    document.getElementById('rout').textContent='BŁĄD:\n'+err.message;
+    document.getElementById('rsec').classList.remove('hidden');
+  } finally {
+    btn.disabled=false;
+    document.getElementById('aspin').classList.add('hidden');
+  }
+}
+
+function extractScores(t){
+  const m=t.match(/PRESJA:(\d+)\s+AGRESJA:(\d+)\s+NEKANIE:(\d+)\s+WIARYGODNOSC:(\d+)/);
+  return m?{presja:+m[1],agresja:+m[2],nekanie:+m[3],wiarygodnosc:+m[4]}:null;
+}
+function renderResult(text){
+  const sc=extractScores(text);
+  document.getElementById('chips').innerHTML='';
+  document.getElementById('bars').innerHTML='';
+  if(sc){
+    document.getElementById('chips').innerHTML=
+      (sc.nekanie>=7?'<span class="chip chd">⚠ Wysokie ryzyko nękania</span>':sc.nekanie>=4?'<span class="chip chw">Umiarkowane ryzyko</span>':'<span class="chip chs">Niskie ryzyko</span>')+
+      (sc.agresja>=7?'<span class="chip chd">Agresja językowa</span>':sc.agresja>=4?'<span class="chip chw">Agresja umiarkowana</span>':'')+
+      (sc.presja>=6?'<span class="chip chw">Presja psychiczna</span>':'')+
+      `<span class="chip chi">Spójność: ${sc.wiarygodnosc}/10</span>`;
+    document.getElementById('bars').innerHTML=[
+      {l:'Presja psychiczna',v:sc.presja,c:sc.presja>=7?'r-':sc.presja>=4?'a-':'g-'},
+      {l:'Wskaźnik agresji',v:sc.agresja,c:sc.agresja>=7?'r-':sc.agresja>=4?'a-':'g-'},
+      {l:'Ryzyko nękania',v:sc.nekanie,c:sc.nekanie>=7?'r-':sc.nekanie>=4?'a-':'g-'},
+      {l:'Spójność mat.',v:sc.wiarygodnosc,c:'b-'}
+    ].map(b=>`<div class="bcard"><div class="blbl">${b.l}</div><div class="btrack"><div class="bfill ${b.c}" style="width:${b.v*10}%"></div></div><div class="bval">${b.v}/10</div></div>`).join('');
+  }
+  document.getElementById('rout').textContent=text;
+  document.getElementById('rsec').classList.remove('hidden');
+}
+function clearResult(){
+  S.result=null;
+  document.getElementById('rsec').classList.add('hidden');
+  [1,2,3,4].forEach(i=>setDot(i,'w'));
+  document.getElementById('ptitle').textContent='Gotowy — dodaj materiały i uruchom analizę';
+  document.getElementById('astatus').textContent='';
+}
+
+async function genReport(){
+  if(!S.result){alert('Najpierw uruchom analizę.');return;}
+  const btn=document.getElementById('rbtn');
+  btn.disabled=true;
+  document.getElementById('rspin').classList.remove('hidden');
+  document.getElementById('rstatus').textContent='Generowanie…';
+  document.getElementById('rprev').classList.add('hidden');
+  const rt=document.querySelector('input[name="rt"]:checked').value;
+  const rtN={full:'Pełny raport psycholingwistyczny',short:'Raport uproszczony dla prawnika',court:'Opinia sądowa biegłego'}[rt];
+  const today=new Date().toLocaleDateString('pl-PL',{year:'numeric',month:'long',day:'numeric'});
+  try{
+    const data=await callAPI({model:'claude-opus-4-5',max_tokens:4000,
+      messages:[{role:'user',content:`Jesteś wybitnym ekspertem psycholingwistą. Sporządź ${rtN} po polsku na podstawie analizy.
+
+WYNIKI ANALIZY:
+${S.result}
+
+Typ: ${rtN} | Sygnatura: ${document.getElementById('caseNum').value||'brak'} | Data: ${today}
+Osoby: ${S.persons.map(p=>p.code+':'+p.role).join('; ')||'brak'} | Uwagi: ${document.getElementById('rnotes').value||'brak'}
+
+Struktura (max 2 strony A4):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           OPINIA PSYCHOLINGWISTYCZNA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Sygnatura: ${document.getElementById('caseNum').value||'—'}    Data: ${today}
+Autor: Ekspert Psycholingwistyczny
+
+1. METRYKA I DANE FORMALNE
+2. PRZEDMIOT BADANIA — MATERIAŁ DOWODOWY
+3. METODOLOGIA
+4. PRZEBIEG ANALIZY I OBSERWACJE
+   4.1 Analiza lingwistyczna
+   4.2 Analiza psychologiczna
+   4.3 Wskaźniki kognitywne (tabela wyników 0-10)
+5. WSKAŹNIKI PRAWNE (art. 190a/190/207 KK)
+6. WNIOSKI KOŃCOWE I REKOMENDACJE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ZASTRZEŻENIE: Opinia pomocnicza, nie zastępuje biegłego sądowego.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Używaj kodów osób. Bądź obiektywny. Zaznacz ograniczenia.`}]});
+    const text=data.content?.map(c=>c.text||'').join('')||'Brak odpowiedzi.';
+    S.report=text;
+    document.getElementById('rprevout').textContent=text;
+    document.getElementById('rprev').classList.remove('hidden');
+    document.getElementById('rstatus').textContent='✓ Raport gotowy';
+  } catch(err){
+    document.getElementById('rstatus').textContent='Błąd: '+err.message;
+  } finally{
+    btn.disabled=false;
+    document.getElementById('rspin').classList.add('hidden');
+  }
+}
+function dlReport(){
+  if(!S.report)return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([S.report],{type:'text/plain;charset=utf-8'}));
+  a.download='Opinia_'+(document.getElementById('caseNum').value.replace(/[^\w]/g,'_')||new Date().toISOString().slice(0,10))+'.txt';
+  a.click();
+}
+function copyReport(){
+  if(!S.report)return;
+  navigator.clipboard.writeText(S.report)
+    .then(()=>{document.getElementById('rstatus').textContent='✓ Skopiowano!';})
+    .catch(()=>alert('Zaznacz tekst ręcznie i skopiuj.'));
+}
+</script>
+</body>
+</html>
