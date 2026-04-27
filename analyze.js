@@ -1,4 +1,13 @@
-export const config = { api: { bodyParser: true } };
+export const config = { api: { bodyParser: false } };
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.on('data', chunk => data += chunk);
+    req.on('end', () => resolve(data));
+    req.on('error', reject);
+  });
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,14 +21,15 @@ export default async function handler(req, res) {
 
   const API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!API_KEY) {
-    res.status(500).json({ error: { message: 'Brak klucza ANTHROPIC_API_KEY w zmiennych środowiskowych Vercel' } }); return;
+    res.status(500).json({ error: { message: 'Brak zmiennej ANTHROPIC_API_KEY w ustawieniach Vercel' } }); return;
   }
 
   let payload;
   try {
-    payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const raw = await readBody(req);
+    payload = JSON.parse(raw);
   } catch(e) {
-    res.status(400).json({ error: { message: 'Nie można sparsować body: ' + e.message } }); return;
+    res.status(400).json({ error: { message: 'Błąd odczytu żądania: ' + e.message } }); return;
   }
 
   try {
@@ -35,15 +45,15 @@ export default async function handler(req, res) {
 
     const text = await response.text();
     if (!text) {
-      res.status(502).json({ error: { message: 'Anthropic API zwróciło pustą odpowiedź (status: ' + response.status + ')' } }); return;
+      res.status(502).json({ error: { message: 'Pusta odpowiedź z Anthropic (HTTP ' + response.status + ')' } }); return;
     }
 
     let data;
     try { data = JSON.parse(text); }
-    catch(e) { res.status(502).json({ error: { message: 'Zła odpowiedź z API: ' + text.slice(0, 200) } }); return; }
+    catch(e) { res.status(502).json({ error: { message: 'Nieprawidłowa odpowiedź API: ' + text.slice(0, 300) } }); return; }
 
     res.status(response.status).json(data);
   } catch (err) {
-    res.status(502).json({ error: { message: 'Błąd połączenia z Anthropic: ' + err.message } });
+    res.status(502).json({ error: { message: 'Błąd połączenia: ' + err.message } });
   }
 }
